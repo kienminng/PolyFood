@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Plyfood.Context;
 using Plyfood.Dto.Order;
 using Plyfood.Entity;
 using Plyfood.Migrations;
@@ -12,30 +14,22 @@ namespace Plyfood.Controllers;
 public class OrderController : Controller
 {
     private readonly IOrderService _orderService;
-    private readonly IAccountService _accountService;
+    private readonly AppDbContext _context;
     private readonly ITokenService _tokenService;
 
-    public OrderController(IOrderService orderService,IAccountService  accountService,ITokenService tokenService)
+    public OrderController(IOrderService orderService,AppDbContext context,ITokenService tokenService)
     {
         _orderService = orderService;
-        _accountService = accountService;
+        _context = context;
         _tokenService = tokenService;
     }
 
     [HttpPost("create")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,User")]
     public IActionResult Create([FromBody] OrderCreatingForm creatingForm)
     {
-        string tokenRequestHeader =  HttpContext.Request.Headers["Authorization"];
-        var token = _tokenService.ExtractTokenFromHeader(tokenRequestHeader);
-        var principal = _tokenService.GetPrincipalFromExpiredToken(token);
-        var username = principal.Identity.Name;
-        var account = _accountService.FindByUsername(username);
-        if (account is null )
-        {
-            return BadRequest("Lỗi token user không tồn tại trên hệ thống");
-        }
-        return Ok(_orderService.Create(creatingForm, account.Users.FirstOrDefault().User_Id));
+        
+        return Ok(_orderService.Create(creatingForm, GetAccountLogin().Users.FirstOrDefault().User_Id));
     }
 
     [HttpPut("changeStatus")]
@@ -54,9 +48,9 @@ public class OrderController : Controller
     }
 
     [HttpGet("GetTotalPrice")]
-    public IActionResult CalculateRevenueByTimePeriod([FromBody] TotalPriceDate priceDate)
+    public IActionResult CalculateRevenueByTimePeriod([FromQuery] DateTime started,[FromQuery] DateTime end)
     {
-        return Ok(_orderService.CalculateRevenueByTimePeriod(priceDate.StartDate, priceDate.EndDate));
+        return Ok(_orderService.CalculateRevenueByTimePeriod(started,end));
     }
 
 
@@ -66,7 +60,10 @@ public class OrderController : Controller
         var token = _tokenService.ExtractTokenFromHeader(tokenRequestHeader);
         var principal = _tokenService.GetPrincipalFromExpiredToken(token);
         var username = principal.Identity.Name;
-        var account = _accountService.FindByUsername(username);
+        var account =  _context.Accounts
+            .Include(x=> x.Users)
+            .ThenInclude(x=> x.Carts)
+            .FirstOrDefault(x=> x.User_name == username);
         return account;
     }
 }

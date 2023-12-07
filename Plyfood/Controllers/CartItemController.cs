@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Plyfood.Context;
 using Plyfood.Dto.CartItems;
 using Plyfood.Entity;
 using Plyfood.Service.IService;
@@ -12,13 +14,13 @@ public class CartItemController : Controller
 {
     private readonly ICartItemService _cartItemService;
     private readonly ITokenService _tokenService;
-    private readonly IAccountService _accountService;
+    private readonly AppDbContext _context;
 
-    public CartItemController(ICartItemService cartItemService,ITokenService tokenService,IAccountService accountService)
+    public CartItemController(ICartItemService cartItemService,ITokenService tokenService,AppDbContext context)
     {
         _cartItemService = cartItemService;
         _tokenService = tokenService;
-        _accountService = accountService;
+        _context = context;
     }
 
     [HttpPost("addToCart")]
@@ -30,16 +32,18 @@ public class CartItemController : Controller
         cartItem.Cart_Id = account.Users.FirstOrDefault().Carts.FirstOrDefault().Cart_Id;
         return Ok(_cartItemService.Save(cartItem));
     }
-
-
-
+    
+    
     private Account GetAccountFromHeader()
     {
-        var headerToken = HttpContext.Request.Headers.Authorization;
-        var token = _tokenService.ExtractTokenFromHeader(headerToken);
+        string tokenRequestHeader =  HttpContext.Request.Headers["Authorization"];
+        var token = _tokenService.ExtractTokenFromHeader(tokenRequestHeader);
         var principal = _tokenService.GetPrincipalFromExpiredToken(token);
         var username = principal.Identity.Name;
-        var account = _accountService.FindByUsername(username);
+        var account =  _context.Accounts
+            .Include(x=> x.Users)
+            .ThenInclude(x=> x.Carts)
+            .FirstOrDefault(x=> x.User_name == username);
         return account;
     }
 }

@@ -164,3 +164,4 @@ C:\Users\Admin\Desktop\Program\MyProject\Plyfood\Plyfood\obj\Debug\net7.0\Plyfoo
 C:\Users\Admin\Desktop\Program\MyProject\Plyfood\Plyfood\obj\Debug\net7.0\ref\Plyfood.dll
 C:\Users\Admin\Desktop\Program\MyProject\Plyfood\Plyfood\bin\Debug\net7.0\AutoMapper.dll
 C:\Users\Admin\Desktop\Program\MyProject\Plyfood\Plyfood\bin\Debug\net7.0\AutoMapper.Extensions.Microsoft.DependencyInjection.dll
+C:\Users\Admin\Desktop\Program\MyProject\Plyfood\Plyfood\obj\Debug\net7.0\Plyfood.sourcelink.json

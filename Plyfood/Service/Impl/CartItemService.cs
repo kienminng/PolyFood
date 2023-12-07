@@ -17,7 +17,13 @@ public class CartItemService : ICartItemService
 
     public ResponseModel Save(CartItem cartItem)
     {
-        return SaveChange(cartItem);
+        var check = ValidateItemInfo(cartItem.Product_Id, cartItem.Cart_Id);
+        if (check is null)
+        {
+            return SaveChange(cartItem,true);
+        }
+        check.Quantity = check.Quantity + cartItem.Quantity;
+        return SaveChange(check,false);
     }
 
     public ResponseModel Update(UpdateCartItemDto cartItemDto)
@@ -32,7 +38,7 @@ public class CartItemService : ICartItemService
             };
         }
 
-        return SaveChange(cartItem);
+        return SaveChange(cartItem,false);
     }
 
     public ResponseModel Delete(int id)
@@ -56,13 +62,22 @@ public class CartItemService : ICartItemService
         };
     }
 
-    private ResponseModel SaveChange(CartItem cartItem)
+    private ResponseModel SaveChange(CartItem cartItem,bool check)
     {
         using (var transaction = _context.Database.BeginTransaction())
         {
             try
             {
-                _context.CartItems.Add(cartItem);
+                if (check)
+                {
+                   _context.CartItems.Add(cartItem); 
+                }
+
+                if (!check)
+                {
+                    _context.CartItems.Update(cartItem);
+                }
+                
                 _context.SaveChanges();
                 transaction.Commit();
                 return new ResponseModel()
@@ -87,5 +102,11 @@ public class CartItemService : ICartItemService
     private CartItem FindById(int id)
     {
         return _context.CartItems.FirstOrDefault(x => x.Cart_Item_Id == id);
+    }
+
+    private CartItem ValidateItemInfo(int? productId, int cartId)
+    {
+        var item = _context.CartItems.FirstOrDefault(x => x.Product_Id == productId && x.Cart_Id == cartId);
+        return item;
     }
 }

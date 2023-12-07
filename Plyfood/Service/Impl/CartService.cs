@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Plyfood.Context;
+using Plyfood.Dto;
+using Plyfood.Dto.CartItems;
+using Plyfood.Dto.Order;
 using Plyfood.Entity;
 using Plyfood.Helper.Exception;
 using Plyfood.ResponseEntity;
@@ -16,17 +19,18 @@ public class CartService : ICartService
         _context = context;
     }
 
-    public Cart ViewCart(int userId)
+    public List<CartItemView> ViewCart(Cart cart)
     {
-        var cart = _context.Carts
-            .Include(x => x.Items)
-            .FirstOrDefault(x => x.User_Id == userId);
-        if (cart is null)
-        {
-            throw new ErrorException("Cart not found", "400");
-        }
-
-        return cart;
+        var list = _context.CartItems
+            .Include(x => x.Product)
+            .Where(x => x.Cart_Id == cart.Cart_Id)
+            .Select(o => new CartItemView()
+            {
+                CartItemId = o.Cart_Item_Id,
+                ProductName = o.Product.Name_Product,
+                Quantity = o.Quantity
+            }).ToList();
+        return list;
     }
     
     public ResponseModel ClearCart(int userId)
@@ -68,12 +72,8 @@ public class CartService : ICartService
         }
     }
 
-    public Order CartToOrder(int userId)
+    public OrderViewDto CartToOrder(int userId)
     {
-        // var cartId = user.Carts.FirstOrDefault().Cart_Id;
-        // var cartItems = _context.CartItems
-        //     .Include(x => x.Product)
-        //     .Where(x => x.Cart_Id == cartId).ToList();
         var cart = _context.Carts
             .Include(x=>x.User)
             .Include(x => x.Items)
@@ -124,7 +124,26 @@ public class CartService : ICartService
                 _context.SaveChanges();
                 transaction.CommitAsync();
                 ClearCart(userId);
-                var orderChange = _context.Orders.FirstOrDefault(x => x.Order_Id == order.Order_Id);
+                var orderChange = _context.Orders
+                    .Include(x=> x.OrderDetails)
+                    .ThenInclude(x=> x.Product)
+                    .Select(o => new OrderViewDto()
+                    {
+                        OrderId = o.Order_Id,
+                        User_Id = o.User_Id,
+                        ActualPrice = o.Actual_Price,
+                        List = o.OrderDetails.Select(
+                            o=> new OrderDetailViewDto()
+                            {
+                                PriceTotal = o.Price_Total,
+                                ProductName = o.Product.Name_Product,
+                                Quantity = o.Quantity
+                            }
+                            ).ToList()
+                    }
+                    ).ToList()
+                    .FirstOrDefault(x=> x.OrderId == order.Order_Id);
+                
                 return orderChange;
             }
             catch (Exception e)

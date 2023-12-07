@@ -9,7 +9,7 @@ public interface IProductService
     ResponseModel CreateProduct(CreateProductForm form);
     ResponseModel UpdateProduct(UpdateProductForm form);
     List<ProductView> FindByName(string name);
-    Product FindById(int id);
+    ProductView FindById(int id);
     ResponseModel ChangeStatus(int status);
     bool ViewProduct(int productId);
 

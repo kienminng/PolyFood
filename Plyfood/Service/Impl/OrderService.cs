@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using Plyfood.Context;
+using Plyfood.Dto;
 using Plyfood.Dto.Order;
 using Plyfood.Entity;
 using Plyfood.Helper.Exception;
@@ -90,37 +92,65 @@ public class OrderService : IOrderService
         }
     }
     
-    public (List<OrderViewDto> , double) CalculateRevenueByTimePeriod(DateTime startDate, DateTime endDate)
+    public ListOrderAndMoneyTotal CalculateRevenueByTimePeriod(DateTime startDate, DateTime endDate)
     {
-        if (startDate == null)
-        {
-            startDate = DateTime.MinValue;
-        }
-
-        if (endDate == null)
-        {
-            endDate = DateTime.Now;
-        }
         var ordersWithTotal = _context.Orders
-            .Where(o => o.Created >= startDate && o.Created <= endDate)
+            .Where(o => o.Created >= startDate && o.Created <= endDate  && o.Order_Status_Id == 3)
+            
             .Select(o => new OrderViewDto()
             {
                 OrderId = o.Order_Id,
                 ActualPrice = o.Actual_Price,
                 CreateAt = o.Created ?? DateTime.MinValue, // Ensure non-nullable DateTime
-                OrderStatusInt = o.Order_Status_Id,
+                OrderStatus = o.Order_Status.Status_Name,
+                List = o.OrderDetails.Select(
+                    o => new OrderDetailViewDto()
+                    {
+                        OrderDetailId = o.Order_Detail_Id,
+                        ProductName = o.Product.Name_Product,
+                        Quantity = o.Quantity,
+                        PriceTotal = o.Price_Total,
+                        CreateAt = o.Create_At
+                    })
+                    .ToList(),
                 User_Id = o.User_Id
             }).ToList();
 
         var totalRevenue = ordersWithTotal.Sum(o => o.ActualPrice);
+        var ListOrderAndMoney = new ListOrderAndMoneyTotal()
+        {
+            List = ordersWithTotal,
+            Money = totalRevenue
+        };
 
-        return (ordersWithTotal, totalRevenue);
+        return ListOrderAndMoney;
     }
 
-    public List<Order> GetAllLoginUser(string username)
+    public List<OrderViewDto>? GetAllLoginUser(string username)
     {
         var list = _context.Orders
-            .Where(x => x.User.User_Name == username && x.Order_Status_Id != 4).ToList();
+            .Include(x => x.User)
+            .Include(x => x.Order_Status)
+            .Include(x => x.OrderDetails)
+            .ThenInclude(x=> x.Product)
+            .Where(x => x.User.User_Name == username && x.Order_Status_Id != 4)
+            .Select(o => new OrderViewDto()
+            {
+                OrderId = o.Order_Id,
+                User_Id = o.User_Id,
+                ActualPrice = o.Actual_Price,
+                OrderStatus = o.Order_Status.Status_Name,
+                List = o.OrderDetails.Select(
+                    o => new OrderDetailViewDto()
+                    {
+                        OrderDetailId = o.Order_Detail_Id,
+                        ProductName = o.Product.Name_Product,
+                        Quantity = o.Quantity,
+                        PriceTotal = o.Price_Total,
+                        CreateAt = o.Create_At
+                    }).ToList()
+
+            }).ToList();
         return list;
     }
 

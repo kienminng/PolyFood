@@ -1,3 +1,4 @@
+using Plyfood.Dto.ProductReviews;
 using Plyfood.Entity;
 
 namespace Plyfood.Dto.Prodct;
@@ -5,7 +6,7 @@ namespace Plyfood.Dto.Prodct;
 public class ProductView
 {
     public int Product_Id { get; set; } 
-    public int? ProductType_Id { get; set; }
+    public string ProductTypeName { get; set; }
     public string Name_Product { get; set; } = string.Empty;
     public double Price { get; set; }
     public string Avatar_Image_Product { get; set; } 
@@ -16,5 +17,5 @@ public class ProductView
     public double? PointAvg { get; set; }
     public DateTime? Create_At { get; set; }
     public DateTime? Update_At { get;set; }
-    public List<ProductReview>? Reviews { get; set; }
+    public List<ReviewProductView>? Reviews { get; set; }
 }

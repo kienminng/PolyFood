@@ -23,14 +23,13 @@ public class ProductReviewService : IProductReviewService
         _status = status;
     }
 
-    public ResponseModel CreateReview(CreateReviewDto dto,string username)
+    public ResponseModel CreateReview(CreateReviewDto dto,Account account)
     {
-        var user = _context.Users
-            .FirstOrDefault(x => x.User_Name.Equals(username));
+        var user = account.Users.FirstOrDefault();
 
         var orderDetail = _context.OrdersDetail
             .Include(x => x.Order)
-            .FirstOrDefault(x => x.Product_Id == dto.ProductId && x.Order.User_Id == user.User_Id && x.Order.Order_Status_Id == 4);
+            .FirstOrDefault(x => x.Product_Id == dto.ProductId && x.Order.User_Id == user.User_Id && x.Order.Order_Status_Id == 3);
         if (orderDetail is null)
         {
             return new ResponseModel()
@@ -39,8 +38,6 @@ public class ProductReviewService : IProductReviewService
                 Status = "400"
             };
         }
-        
-        
         var review = new ProductReview()
         {
             Product_Id = dto.ProductId,
@@ -58,7 +55,7 @@ public class ProductReviewService : IProductReviewService
                 transaction.Commit();
                 return new ResponseModel()
                 {
-                    Message = _productMessage.AddSuccess,
+                    Message ="Success",
                     Status = _status.Ok
                 };
             }
@@ -72,9 +69,9 @@ public class ProductReviewService : IProductReviewService
     }
     
 
-    public ResponseModel UpdateReview(UpdateReviewDto dto,string username)
+    public ResponseModel UpdateReview(UpdateReviewDto dto,Account account)
     {
-        ProductReview productReview = ValidateProductReview(dto.ProductReviewId, username);
+        ProductReview productReview = ValidateProductReview(dto.ProductReviewId, account.Users.FirstOrDefault().User_Id);
         productReview.Content_Seen = dto.ContentSeen;
         productReview.Ponit_Evaluation = dto.PointEvaluation;
         using (var transaction = _context.Database.BeginTransaction())
@@ -100,9 +97,9 @@ public class ProductReviewService : IProductReviewService
         }
     }
 
-    public ResponseModel DeleteReview(int id,string username)
+    public ResponseModel DeleteReview(int id,Account account)
     {
-        var review = ValidateProductReview(id, username);
+        var review = ValidateProductReview(id, account.Users.FirstOrDefault().User_Id);
         using (var transaction = _context.Database.BeginTransaction())
         {
             try
@@ -124,15 +121,15 @@ public class ProductReviewService : IProductReviewService
         }
     }
 
-    public List<ProductReview> HistoryReviewsByUser(string username)
+    public List<ProductReview> HistoryReviewsByUser(Account account)
     {
         List<ProductReview> reviews = _context.ProductReviews
-            .Where(x => x.User.User_Name.Equals(username) ).ToList();
+            .Where(x => x.User.User_Id == account.Users.FirstOrDefault().User_Id ).ToList();
         return reviews;
     }
     
     
-    private ProductReview ValidateProductReview(int reviewId, string username)
+    private ProductReview ValidateProductReview(int reviewId, int userId)
     {
         var review =
             _context.ProductReviews
@@ -140,12 +137,12 @@ public class ProductReviewService : IProductReviewService
                 .FirstOrDefault(x => x.Product_Review_Id == reviewId);
         if (review is null)
         {
-            throw new Exception("Not found exception");
+            throw new ErrorException("Not found exception","400");
         }
 
-        if (review.User.User_Name != username)
+        if (review.User.User_Id != userId)
         {  
-           throw new Exception("UnAuthozation");
+           throw new ErrorException("UnAuthozation","401");
         }
 
         return review;

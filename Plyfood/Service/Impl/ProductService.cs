@@ -2,6 +2,7 @@ using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Plyfood.Context;
 using Plyfood.Dto.Prodct;
+using Plyfood.Dto.ProductReviews;
 using Plyfood.Entity;
 using Plyfood.Helper;
 using Plyfood.Helper.Exception;
@@ -104,9 +105,15 @@ public class ProductService : IProductService
         return views;
     }
 
-    public Product FindById(int id)
+    public ProductView FindById(int id)
     {
-        var product = _context.Products.FirstOrDefault(x => x.Product_Id == id);
+        var product = _context.Products
+            .Include(x=> x.ProductType)
+            .Include(x=> x.Reviews)
+            .ThenInclude(x=> x.User)
+            .Select(o => TranferProductToView(o))
+            .FirstOrDefault(x => x.Product_Id == id)
+            ;
         if (product is null)
         {
             throw new Exception(_productMessage.ProductIsNotExist);
@@ -128,8 +135,9 @@ public class ProductService : IProductService
     public ProductView ProductView(int id)
     {
         var check = _context.Products
-            .Include(x=>x.Reviews)
+            .Include(x=>x.ProductType)
             .Include(x=> x.OrderDetails)
+            .Include(x=>x.Reviews).ThenInclude(x=> x.User)
             .FirstOrDefault(x => x.Product_Id == id);
         if (check != null)
         {
@@ -187,22 +195,33 @@ public class ProductService : IProductService
         return true;
     }
 
-    private ProductView TranferProductToView(Product product)
+    private ProductView TranferProductToView(Product o)
     {
-        var productPoint = _context.ProductReviews
-            .Where(x => x.Product_Id == product.Product_Id)
-            .Select(x => x.Ponit_Evaluation).Average();
         ProductView productView = new ProductView()
         {
-            Product_Id = product.Product_Id,
-            Name_Product = product.Name_Product,
-            Price = product.Price,
-            Avatar_Image_Product = product.Avatar_Image_Product,
-            Title = product.Title,
-            Discount = product.Discount,
-            PointAvg = productPoint,
-            Number_Of_View = product.Number_Of_View,
-            Create_At = product.Create_At
+            Product_Id = o.Product_Id,
+            ProductTypeName = o.ProductType.Name_Product_Type,
+            Name_Product = o.Name_Product,
+            Price = o.Price,
+            Avatar_Image_Product = o.Avatar_Image_Product,
+            Title = o.Title,
+            Discount = o.Discount,
+            Status = o.Status,
+            Number_Of_View = o.Number_Of_View,
+            Reviews = o.Reviews.Select( 
+                o=> new ReviewProductView()
+                {
+                    Content_rated = o.Content_rated,
+                    Content_Seen = o.Content_Seen,
+                    Ponit_Evaluation = o.Ponit_Evaluation,
+                    Status = o.Status,
+                    Username = o.User.User_Name,
+                    Create_At = o.Create_At,
+                    Update_At = o.Update_At
+                }).ToList(),
+            PointAvg = o.Reviews.Average(x=> x.Ponit_Evaluation),
+            Create_At = o.Create_At,
+            Update_At = o.Update_At
         };
         return productView;
     }
@@ -230,18 +249,7 @@ public class ProductService : IProductService
             
             foreach (var product in products)
             {
-                ProductView productView = new ProductView()
-                {
-                    Product_Id = product.Product_Id,
-                    Name_Product = product.Name_Product,
-                    Price = product.Price,
-                    Avatar_Image_Product = product.Avatar_Image_Product,
-                    Title = product.Title,
-                    Discount = product.Discount,
-                    Number_Of_View = product.Number_Of_View,
-                    Create_At = product.Create_At,
-                    Reviews = product.Reviews
-                };
+                ProductView productView = TranferProductToView(product);
                 views.Add(productView);
             }
 

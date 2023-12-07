@@ -77,6 +77,7 @@ public class VnPayController : Controller
                 Console.WriteLine($"Thanh toán giao dich thành công OrderId = {orderId} VNPAY transaction = {vnp_TransactionStatus} ");
                 var order = _context.Orders.FirstOrDefault(x => x.Order_Id == orderId);
                 order.Order_Status_Id = 3;
+                order.Updated = DateTime.Now;
                 _context.Orders.Update(order);
                 _context.SaveChanges();
                 return Ok("Giao dịch thành công");

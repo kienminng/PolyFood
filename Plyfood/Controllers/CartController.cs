@@ -28,7 +28,7 @@ public class CartController : Controller
     public IActionResult ViewCart()
     {
         var account = GetAccountLogin();
-        return Ok(_cartService.ViewCart(account.Users.FirstOrDefault().User_Id));
+        return Ok(_cartService.ViewCart(account.Users.FirstOrDefault().Carts.FirstOrDefault()));
     }
 
     [HttpPut("clear")]
@@ -56,6 +56,7 @@ public class CartController : Controller
             _context.Accounts
                 .Include(x=> x.Users)
                 .ThenInclude(x=> x.Carts)
+                .ThenInclude(x=> x.Items)
                 .FirstOrDefault(x=> x.User_name == username);
         return account;
     }
