@@ -7,4 +7,6 @@ public interface IMailSender
 {
     void SendMail(MailForm mailForm);
     public bool ConfirmEmailByUrl(Account account,string Token);
+    
+    
 }

@@ -1,5 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Plyfood.Context;
+using Plyfood.Dto.SendMail;
+using Plyfood.Entity;
+using Plyfood.Service.IService;
 using Plyfood.VnPay;
 
 namespace Plyfood.Controllers;
@@ -10,11 +14,13 @@ public class VnPayController : Controller
 {
     private readonly Helper.VnPay _vnPay;
     private readonly AppDbContext _context;
+    private readonly IMailSender _mailSender;
 
-    public VnPayController(Helper.VnPay vnPay,AppDbContext context)
+    public VnPayController(Helper.VnPay vnPay,AppDbContext context,IMailSender sender)
     {
         _vnPay = vnPay;
         _context = context;
+        _mailSender = sender;
     }
 
     [HttpPost("VnPay")]
@@ -75,11 +81,16 @@ public class VnPayController : Controller
             if (vnp_ResponseCode == "00" && vnp_TransactionStatus == "00")
             {
                 Console.WriteLine($"Thanh toán giao dich thành công OrderId = {orderId} VNPAY transaction = {vnp_TransactionStatus} ");
-                var order = _context.Orders.FirstOrDefault(x => x.Order_Id == orderId);
+                var order = _context.Orders
+                    .Include(x=> x.User)
+                    .Include(x=> x.OrderDetails)
+                    .ThenInclude(x=> x.Product)
+                    .FirstOrDefault(x => x.Order_Id == orderId);
                 order.Order_Status_Id = 3;
                 order.Updated = DateTime.Now;
                 _context.Orders.Update(order);
                 _context.SaveChanges();
+                _mailSender.SendMail(SendMailForm(order.User.Email,order));
                 return Ok("Giao dịch thành công");
             }
             else
@@ -92,5 +103,25 @@ public class VnPayController : Controller
         {
             return BadRequest("có lỗi trong quá trình xử lí ");
         }
+    }
+
+    private MailForm SendMailForm(string email,Order order)
+    {
+        Dto.SendMail.MailForm mailForm = new MailForm();
+        mailForm.To = email;
+        mailForm.Subject = "Hoá Đơn Thanh Toán ";
+        
+        string OrderItems = "";
+        foreach (var s in order.OrderDetails)
+        {
+            string o = $"<p>Sản phẩm : {s.Product.Name_Product} - Số lượng: {s.Quantity} - Giá: ${s.Price_Total}</p><br>";
+            OrderItems += o;
+        }
+        string orderContent = "<p><strong>Chi tiết đơn hàng:</strong></p>" +
+                              $"<p>Mã đơn hàng: {order.Order_Id} {order.Created} </p>" + 
+                              OrderItems+
+                              $"<p><strong>Tổng cộng:{order.Actual_Price} </strong></p>";
+        mailForm.Body = "Nội dung của email<br>" + orderContent;
+        return mailForm;
     }
 }

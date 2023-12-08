@@ -1,3 +1,5 @@
+using Plyfood.Entity;
+
 namespace Plyfood.Dto.Prodct;
 
 public class UpdateProductForm
@@ -9,5 +11,21 @@ public class UpdateProductForm
     public string Title { get; set; }
     public int Discount { get; set; }
     public int Status { get; set; }
-    public DateTime? Create_At { get; set; }
+    
+    public Product UpdateFormToProduct(UpdateProductForm uf)
+    {
+        Product product = new Product()
+        {
+            Product_Id = uf.ProductId,
+            Name_Product = uf.NameProduct,
+            Price = uf.Price,
+            Avatar_Image_Product = uf.Avatar,
+            Title = uf.Title,
+            Status = uf.Status,
+            Discount = uf.Discount,
+        };
+        return product;
+    }
+    
+    
 }

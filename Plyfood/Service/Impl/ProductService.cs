@@ -76,7 +76,7 @@ public class ProductService : IProductService
 
     public ResponseModel UpdateProduct(UpdateProductForm form)
     {
-        Product product = UpdateFormToProduct(form);
+        Product product =form.UpdateFormToProduct(form);
         using (var transaction = _context.Database.BeginTransaction())
         {
             try
@@ -226,20 +226,7 @@ public class ProductService : IProductService
         return productView;
     }
 
-    private Product UpdateFormToProduct(UpdateProductForm uf)
-    {
-        Product product = new Product()
-        {
-            Product_Id = uf.ProductId,
-            Name_Product = uf.NameProduct,
-            Price = uf.Price,
-            Avatar_Image_Product = uf.Avatar,
-            Title = uf.Title,
-            Status = uf.Status,
-            Discount = uf.Discount,
-        };
-        return product;
-    }
+    
 
     private List<ProductView> DataTranferListProductToViews(List<Product> products)
     {

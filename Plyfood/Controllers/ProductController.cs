@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Plyfood.Dto.Prodct;
 using Plyfood.Service.IService;
@@ -16,18 +17,35 @@ public class ProductController : Controller
     }
 
     [HttpPost("create")]
+    [Authorize(Roles = "Admin")]
     public IActionResult Create([FromBody] CreateProductForm productForm)
     {
         return Ok(_productService.CreateProduct(productForm));
     }
 
+    [HttpPut]
+    [Authorize(Roles = "Admin")]
+    public IActionResult Update([FromBody] UpdateProductForm form)
+    {
+        return Ok(_productService.UpdateProduct(form));
+    }
+
+    [HttpGet("FindByName")]
+    [AllowAnonymous]
+    public IActionResult FindByName([FromQuery] string name)
+    {
+        return Ok(_productService.FindByName(name));
+    }
+    
     [HttpGet("views")]
+    [AllowAnonymous]
     public IActionResult View([FromQuery] int id)
     {
         return Ok(_productService.ProductView(id));
     }
 
     [HttpGet("FindById")]
+    [Authorize(Roles = "Admin")]
     public IActionResult FindById([FromQuery] int id)
     {
         return Ok(_productService.FindById(id));

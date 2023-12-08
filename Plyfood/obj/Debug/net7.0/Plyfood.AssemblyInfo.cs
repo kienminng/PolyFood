@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Plyfood")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6cb7b60ddd91bf496d720fec63a5b63088290816")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+938a87095f78658752bd8165abd497f194b7210e")]
 [assembly: System.Reflection.AssemblyProductAttribute("Plyfood")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Plyfood")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
